@@ -1,6 +1,7 @@
 ##### utility functions from markovify ###########
 
 import re
+import random
 
 exceptions = ['c.']
 
@@ -58,25 +59,70 @@ with open("data.txt", encoding="utf8") as f:
     text = f.read()
 
 text = str(text).replace('\n', ' ')
-
 sentences = split_into_sentences(text)
-words = [sentence.split(' ') for sentence in sentences]
 
-model = {}
-starters = []
+class Model:
+    def __init__(self, sentences):
+        self.model = {}
+        self.starters = []
 
-for sentence in sentences:
-    words = [sentence.split(' ') for sentence in sentences]
-    starters.append(words[0])
+        for sentence in sentences:
+            words = sentence.split(' ')
+            self.starters.append(words[0])
 
-    for i in range(len(words) - 1):
-        word, nextWord = words[i], words[i + 1]
+            for i in range(len(words) - 1):
+                word, nextWord = words[i], words[i + 1]
 
-        if word in model:
-            model[word].append(nextWord)
+                if word in self.model:
+                    self.model[word].append(nextWord)
 
-        else:
-            model[word] = [nextWord]
+                else:
+                    self.model[word] = [nextWord]
+    
+    def generateSentences(self, n, maxLength=30):
+        """
+        generate n sentences and return
+        a string containing them
+        """
+
+        if n < 1:
+            return
+        
+        string = ''
+
+        while n:
+            prevWord = random.choice(self.starters)
+            newSentence = prevWord + ' '
+            sentenceFormed = False
+
+            for _ in range(maxLength):
+                newWord = random.choice(self.model[prevWord])
+                newSentence += newWord
+                print(newSentence)
+                if newSentence[-1] in '.?!':
+                    sentenceFormed = True
+                    break
+                
+                newSentence += ' '
+                prevWord = newWord
+            
+            if sentenceFormed:
+                n -= 1
+                string += newSentence + ' ' 
+        
+        return string
+
+model = Model(sentences)
+print(model.generateSentences(2))
+
+
+
+
+         
+            
+
+
+
 
 
 
