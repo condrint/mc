@@ -41,25 +41,32 @@ with open("data.txt", encoding="utf8") as f:
 text = str(text).replace('\n', ' ')
 sentences = split_into_sentences(text)
 
+
+
 class Model:
-    def __init__(self, sentences):
+    def __init__(self, sentences, stateSize=2):
         self.model = {}
         self.starters = []
+        self.stateSize = stateSize
 
         for sentence in sentences:
             words = sentence.split(' ')
+
+            # remove dialogue
+            if "'" in sentence or '"' in sentence or "“" in sentence:
+                continue
+
             self.starters.append(words[0])
+            for i in range(len(words) - self.stateSize + 1):
+                key, value = words[i], ' '.join(words[i + 1: i + self.stateSize]) 
 
-            for i in range(len(words) - 1):
-                word, nextWord = words[i], words[i + 1]
-
-                if word in self.model:
-                    self.model[word].append(nextWord)
+                if key in self.model:
+                    self.model[key].append(value)
 
                 else:
-                    self.model[word] = [nextWord]
+                    self.model[key] = [value]
     
-    def generateSentences(self, n, maxLength=30):
+    def generateSentences(self, n, maxLength=5):
         """
         generate n sentences and return
         a string containing them
@@ -76,16 +83,15 @@ class Model:
             sentenceFormed = False
 
             for _ in range(maxLength):
-                
-                newWord = random.choice(self.model[prevWord])
-                newSentence += newWord
-                print(newSentence)
-                if newSentence[-1] in '.?!':
+                newStuff = random.choice(self.model[prevWord])
+                newSentence += newStuff
+
+                if newSentence[-1] in '.?!\'\"':
                     sentenceFormed = True
                     break
                 
                 newSentence += ' '
-                prevWord = newWord
+                prevWord = newStuff.split(' ')[-1]
             
             if sentenceFormed:
                 n -= 1
@@ -93,7 +99,7 @@ class Model:
         
         return string
 
-model = Model(sentences)
+model = Model(sentences, 4)
 print(model.generateSentences(2))
 
 
