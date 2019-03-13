@@ -35,7 +35,7 @@ def split_into_sentences(text):
 
 # read data
 
-with open("data.txt", encoding="utf8") as f:
+with open("catcher.txt", encoding="utf8") as f:
     text = f.read()
 
 text = str(text).replace('\n', ' ')
@@ -43,11 +43,21 @@ sentences = split_into_sentences(text)
 
 
 
+
 class Model:
-    def __init__(self, sentences, stateSize=2):
+    def __init__(self, sentences, stateSize=2, overlap=1):
         self.model = {}
         self.starters = []
         self.stateSize = stateSize
+        self.overlap = overlap
+
+        if stateSize - 1 < overlap:
+            print('Error overlap too big')
+            return
+        
+        if stateSize < 2 or overlap < 1:
+            print('Error overlap or state size too small')
+            return
 
         for sentence in sentences:
             words = sentence.split(' ')
@@ -57,14 +67,16 @@ class Model:
                 continue
 
             self.starters.append(words[0])
+
             for i in range(len(words) - self.stateSize + 1):
-                key, value = words[i], ' '.join(words[i + 1: i + self.stateSize]) 
+                for j in range(i + 1, i + overlap + 1):
+                    key, value = ' '.join(words[i:j]), ' '.join(words[j: i + self.stateSize]) 
 
-                if key in self.model:
-                    self.model[key].append(value)
+                    if key in self.model:
+                        self.model[key].append(value)
 
-                else:
-                    self.model[key] = [value]
+                    else:
+                        self.model[key] = [value]
     
     def generateSentences(self, n, maxLength=5):
         """
@@ -83,15 +95,34 @@ class Model:
             sentenceFormed = False
 
             for _ in range(maxLength):
-                newStuff = random.choice(self.model[prevWord])
+                keyFound = False
+                while not keyFound:
+                    newStuff = ''
+                    if not prevWord:
+                        newSentence = ''
+                        break
+                    if prevWord in self.model:
+                        keyFound = True
+                        newStuff = random.choice(self.model[prevWord])
+                    else:
+                        listOfPrevWord = prevWord.split(' ')[::-1]
+                        listOfPrevWord.pop()
+                        prevWord = ' '.join(listOfPrevWord[::-1])
+
+                if not newStuff:
+                    break
+
                 newSentence += newStuff
 
-                if newSentence[-1] in '.?!\'\"':
+                if newSentence and newSentence[-1] in '.?!\'\"':
                     sentenceFormed = True
                     break
                 
                 newSentence += ' '
-                prevWord = newStuff.split(' ')[-1]
+                if len(newSentence) < self.overlap:
+                    prevWord = newStuff.split(' ')
+                else:
+                    prevWord = newStuff.split(' ')[-self.overlap]
             
             if sentenceFormed:
                 n -= 1
@@ -99,7 +130,7 @@ class Model:
         
         return string
 
-model = Model(sentences, 4)
+model = Model(sentences, 5, 2)
 print(model.generateSentences(2))
 
 
